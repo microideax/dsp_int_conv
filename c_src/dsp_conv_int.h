@@ -138,29 +138,34 @@ public:
 #pragma HLS inline off
     ap_uint<8> idx_k = 0;
     ap_uint<8> idx_m = 0;
+    ap_uint<4> k1;
+    ap_uint<4> k2;
+    ap_uint<8> j;
+    ap_uint<8> i;
+    ap_uint<3> i_idx;
 
     ap_uint<64> w_tmp_buf = 0;
 
-    for (ap_uint<4> k1 = 0; k1 < K; k1++)
+    for (k1 = 0; k1 < K; k1++)
     {
-      for (ap_uint<4> k2 = 0; k2 < K; k2++)
+      for (k2 = 0; k2 < K; k2++)
       {
-        for (ap_uint<8> j = 0; j < Tm; j++)
+        for (j = 0; j < Tm; j++)
         {
 #pragma HLS PIPELINE
 #if IN_PORT_WIDTH == 64
           idx_k = j * K * K;
-          for (ap_uint<8> i = 0; i < Tn; i += 4)
+          for (i = 0; i < Tn; i += 4)
           {
             idx_m = i * j * K * K;
             w_tmp_buf = *(layer_weights + weight_offset + idx_k + idx_m + k1 * K + k2);
-            for (int i_idx = 0; i_idx < 4; i_idx++)
+            for (i_idx = 0; i_idx < 4; i_idx++)
             {
 #pragma HLS UNROLL
               buf[i_idx][j][k1][k2] = w_tmp_buf.range(16 * i_idx + 15, 16 * i_idx);
             }
 #else
-          for (int i = 0; i < Tn; i++)
+          for (i = 0; i < Tn; i++)
           {
             buf[i][j][k1][k2] = *(layer_weights + weight_offset + j * Tm * K * K + i * K * K + k1 * K + k2);
           }
@@ -193,7 +198,9 @@ public:
       int16_t w_buf[Tn][Tm][K_max][K_max],
       int16_t b_buf[Tm],
       int16_t out_buf[Tm][Tr][Tc],
-      int S, int n, int N,
+      int S,
+      int n,
+      int N,
       int r,
       int c,
       int K,
@@ -239,8 +246,8 @@ public:
     int16_t i_tmp_1[Tn][IBUF_t];
 #pragma HLS ARRAY_PARTITION variable = i_tmp_0 complete dim = 1
 #pragma HLS ARRAY_PARTITION variable = i_tmp_1 complete dim = 1
-#pragma HLS ARRAY_PARTITION variable = i_tmp_0 complete dim = 2
-#pragma HLS ARRAY_PARTITION variable = i_tmp_1 complete dim = 2
+    // #pragma HLS ARRAY_PARTITION variable = i_tmp_0 complete dim = 2
+    // #pragma HLS ARRAY_PARTITION variable = i_tmp_1 complete dim = 2
 
     if (n >= 0 && n - Tn < N)
     {
@@ -254,7 +261,7 @@ public:
           {
             // #pragma HLS PIPELINE
             f_h_tmp = S * tr + ker_0 + i_offset;
-#pragma HLS PIPELINE
+            // #pragma HLS PIPELINE
             // for (int j_index = 0; j_index < (Tc - 1) * S_max + K_max; j_index++)
 
             for (i_index = 0; i_index < Tn / 2; i_index++)
@@ -266,7 +273,7 @@ public:
                 i_tmp_1[i_index][j_index] = in_buf[2 * i_index + 1][f_h_tmp][j_index];
               }
             }
-
+#pragma HLS PIPELINE
             for (tc = 0; tc < Tc; tc++)
             {
               f_w_tmp = S * (tc) + ker_1;
@@ -276,17 +283,16 @@ public:
                 for (tn = 0; tn < Tn; tn = tn + 2)
                 {
 #pragma HLS UNROLL
-                  /*
-                  a1in_i = w_buf[tn][tm][i_tmp][j];
-                  a2in_i = w_buf[tn + 1][tm][i_tmp][j];
+                  a1in_i = w_buf[tn][tm][i_tmp][ker_1];
+                  a2in_i = w_buf[tn + 1][tm][i_tmp][ker_1];
                   b1in_i = i_tmp_0[tn >> 1][f_w_tmp];
                   b2in_i = i_tmp_1[tn >> 1][f_w_tmp];
-                  */
+                  /*
                   mac_i[0] = w_buf[tn][tm][i_tmp][ker_1];
                   mac_i[1] = w_buf[tn + 1][tm][i_tmp][ker_1];
                   mac_i[2] = i_tmp_0[tn >> 1][f_w_tmp];
                   mac_i[3] = i_tmp_1[tn >> 1][f_w_tmp];
-
+                  */
                   if (ker_0 == 0 && ker_1 == 0 && tn == 0 && n == 0)
                   {
                     clear = 0;
@@ -298,7 +304,8 @@ public:
                     clear = 0;
                     mac_tmp = out_buf[tm][tr][tc];
                   }
-                  mm_dsp_mm(mac_i[0], mac_i[1], mac_i[2], mac_i[3], &mac_tmp, clear, dsp_clk);
+                  // mm_dsp_mm(mac_i[0], mac_i[1], mac_i[2], mac_i[3], &mac_tmp, clear, dsp_clk);
+                  mm_dsp_mm(a1in_i, b1in_i, a2in_i, b2in_i, &mac_tmp, clear, dsp_clk);
                   if (mac_tmp >= 16384)
                   {
                     accum_out = 16384;
@@ -322,7 +329,7 @@ public:
   };
 
   // Ouput out_buf data to output interface
-/*  void output_res(int16_t out_buf[][Tr][Tc],
+  /*  void output_res(int16_t out_buf[][Tr][Tc],
                   int16_t *out_data,
                   int out_offset,
                   int n,
@@ -360,7 +367,7 @@ public:
 
   void output_res(int16_t out_buf[][Tr][Tc],
                   //int16_t *out_data,
-		  	  	  ap_uint<64>  *out_data,
+                  ap_uint<64> *out_data,
                   int out_offset,
                   int n,
                   int m,
@@ -374,29 +381,33 @@ public:
   {
 
 #pragma HLS inline off
-ap_uint<8> d_idx;
-ap_uint<64> local_o_buf = 0;
-ap_uint<8> idx_tm;
-	idx_tm = m >> 2;
+
+    ap_uint<64> local_o_buf = 0;
+    ap_uint<8> idx_tm;
+    ap_uint<5> tr;
+    ap_uint<5> tc;
+    ap_uint<8> d_idx;
+
+    idx_tm = m >> 2;
     // if (n >= N - Tn && m > 0)
     if (n >= N - Tn && n < N && m >= 0)
     {
       cout << "output buffer data: " << n << " " << m << endl;
-      for (int tr = 0; tr < Tr; tr++)
+      for (tr = 0; tr < Tr; tr++)
       {
-          for (int tc = 0; tc < Tc; tc++)
-          {
+        for (tc = 0; tc < Tc; tc++)
+        {
 #pragma HLS PIPELINE
-            //*(out_data + out_offset + tm * Tr * Tc + tr * Tc + tc) = out_buf[tm][tr][tc];
+          //*(out_data + out_offset + tm * Tr * Tc + tr * Tc + tc) = out_buf[tm][tr][tc];
 
-            for (d_idx = 0; d_idx < 4; d_idx++)
-            {
-  #pragma HLS UNROLL
-               local_o_buf.range(16 * d_idx + 15, 16 * d_idx) = out_buf[d_idx][tr][tc];
-              // cout << "Fill local buffer: " << idx_n << " " << idx_r << " " << idx_k << " " << buf_0[d_idx][j][k] << "  " << local_i_buf << endl;
-            }
-            *(out_data + out_offset + idx_tm * Tr * Tc + tr * Tc + tc) = local_o_buf.range(63,0);
+          for (d_idx = 0; d_idx < 4; d_idx++)
+          {
+#pragma HLS UNROLL
+            local_o_buf.range(16 * d_idx + 15, 16 * d_idx) = out_buf[d_idx][tr][tc];
+            // cout << "Fill local buffer: " << idx_n << " " << idx_r << " " << idx_k << " " << buf_0[d_idx][j][k] << "  " << local_i_buf << endl;
           }
+          *(out_data + out_offset + idx_tm * Tr * Tc + tr * Tc + tc) = local_o_buf.range(63, 0);
+        }
       }
     }
     else
@@ -404,8 +415,6 @@ ap_uint<8> idx_tm;
       cout << "Skipping output buffer due to initial empty " << endl;
     }
   };
-
-
 
   void print_inputbuf(
       int16_t array_name[][IBUF_t][IBUF_t],
@@ -635,7 +644,7 @@ ap_uint<8> idx_tm;
     int16_t *i_weight,
     int16_t *i_data,
 #endif
-	 ap_uint<64>  *out_data,
+      ap_uint<64> *out_data,
       bool clk2)
   {
 
@@ -664,14 +673,16 @@ ap_uint<8> idx_tm;
     ap_uint<8> loop_counter_m;
     //    bool clk2;
 
+#pragma HLS resource variable = in_buf_0 core = RAM_2P
 #pragma HLS ARRAY_PARTITION variable = in_buf_0 complete dim = 1
-//#pragma HLS ARRAY_PARTITION variable = in_buf_0 block factor = 2 dim = 2
+// #pragma HLS ARRAY_PARTITION variable = in_buf_0 block factor = 2 dim = 2
 #pragma HLS ARRAY_PARTITION variable = w_buf_0 complete dim = 1
 #pragma HLS ARRAY_PARTITION variable = w_buf_0 complete dim = 2
 #pragma HLS ARRAY_PARTITION variable = b_buf_0 complete
 
+#pragma HLS resource variable = in_buf_1 core = RAM_2P
 #pragma HLS ARRAY_PARTITION variable = in_buf_1 complete dim = 1
-//#pragma HLS ARRAY_PARTITION variable = in_buf_1 block factor = 2 dim = 2
+// #pragma HLS ARRAY_PARTITION variable = in_buf_1 block factor = 2 dim = 2
 #pragma HLS ARRAY_PARTITION variable = w_buf_1 complete dim = 1
 #pragma HLS ARRAY_PARTITION variable = w_buf_1 complete dim = 2
 #pragma HLS ARRAY_PARTITION variable = b_buf_1 complete

@@ -7,7 +7,7 @@ using namespace std;
 
 //#define IN_PORT_WIDTH 64
 
-dsp_conv_int<int16_t, int16_t, int16_t, int16_t, int16_t, 8, 4, 8, 8, 1, 3, 10, 16, 16> conv_layer_acc;
+dsp_conv_int<int16_t, int16_t, int16_t, int16_t, int16_t, 4, 4, 8, 8, 1, 3, 10, 16, 16> conv_layer_acc;
 
 void conv_layer_proc(
     int *param_port,
@@ -19,7 +19,7 @@ void conv_layer_proc(
     int16_t *weight_in,
     int16_t *data_in,
 #endif
-	ap_uint<64>  *data_out,
+    ap_uint<64> *data_out,
     bool dsp_clk)
 {
 
@@ -67,7 +67,7 @@ void sub_net_proc(
     int16_t weight_in[256],
     int16_t data_in[1024],
 #endif
-	ap_uint<64>  data_out[1024],
+    ap_uint<64> data_out[1024],
     bool dsp_clk)
 {
 
@@ -110,7 +110,7 @@ int main()
   int16_t b_port[256];
   bool dsp_clk;
   int32_t out_buf[4][8][8];
-  ap_uint<64>  out_port[1024];
+  ap_uint<64> out_port[1024];
 
   int param[16] = {
       4,
@@ -238,4 +238,3 @@ int main()
 
   return 0;
 };
-
