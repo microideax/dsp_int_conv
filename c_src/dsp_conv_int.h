@@ -226,8 +226,12 @@ public:
 
     int16_t a1in_i;
     int16_t a2in_i;
+    int16_t a11in_i;
+    int16_t a21in_i;
     int16_t b1in_i;
     int16_t b2in_i;
+
+
     int16_t mac_i[4];
 #pragma HLS ARRAY_PARTITION variable = mac_i complete dim = 1
 
@@ -242,12 +246,13 @@ public:
 
     // int16_t i_tmp_0[Tn][(Tc - 1) * S_max + K_max];
     // int16_t i_tmp_1[Tn][(Tc - 1) * S_max + K_max];
-    int16_t i_tmp_0[Tn][IBUF_t];
-    int16_t i_tmp_1[Tn][IBUF_t];
+    int16_t i_tmp_0[Tn/2][IBUF_t];
+    int16_t i_tmp_1[Tn/2][IBUF_t];
+    int16_t i_tmp_2[Tn/2][IBUF_t];
+    int16_t i_tmp_3[Tn/2][IBUF_t];
+
 #pragma HLS ARRAY_PARTITION variable = i_tmp_0 complete dim = 1
 #pragma HLS ARRAY_PARTITION variable = i_tmp_1 complete dim = 1
-    // #pragma HLS ARRAY_PARTITION variable = i_tmp_0 complete dim = 2
-    // #pragma HLS ARRAY_PARTITION variable = i_tmp_1 complete dim = 2
 
     if (n >= 0 && n - Tn < N)
     {
@@ -259,10 +264,8 @@ public:
         {
           for (tr = 0; tr < Tr; tr++)
           {
-            // #pragma HLS PIPELINE
+#pragma HLS PIPELINE
             f_h_tmp = S * tr + ker_0 + i_offset;
-            // #pragma HLS PIPELINE
-            // for (int j_index = 0; j_index < (Tc - 1) * S_max + K_max; j_index++)
 
             for (i_index = 0; i_index < Tn / 2; i_index++)
             {
@@ -271,13 +274,15 @@ public:
               {
                 i_tmp_0[i_index][j_index] = in_buf[2 * i_index][f_h_tmp][j_index];
                 i_tmp_1[i_index][j_index] = in_buf[2 * i_index + 1][f_h_tmp][j_index];
+//                i_tmp_2[i_index][j_index] = in_buf[4 * i_index][f_h_tmp][j_index];
+//                i_tmp_3[i_index][j_index] = in_buf[4 * i_index][f_h_tmp][j_index];
               }
             }
-#pragma HLS PIPELINE
+
             for (tc = 0; tc < Tc; tc++)
             {
               f_w_tmp = S * (tc) + ker_1;
-              for (tm = 0; tm < Tm; tm++)
+              for (tm = 0; tm < Tm; tm = tm + 2)
               {
 #pragma HLS UNROLL
                 for (tn = 0; tn < Tn; tn = tn + 2)
@@ -285,6 +290,10 @@ public:
 #pragma HLS UNROLL
                   a1in_i = w_buf[tn][tm][i_tmp][ker_1];
                   a2in_i = w_buf[tn + 1][tm][i_tmp][ker_1];
+
+                  a11in_i = w_buf[tn][tm+1][i_tmp][ker_1];
+                  a21in_i = w_buf[tn + 1][tm+1][i_tmp][ker_1];
+
                   b1in_i = i_tmp_0[tn >> 1][f_w_tmp];
                   b2in_i = i_tmp_1[tn >> 1][f_w_tmp];
                   /*
@@ -306,6 +315,7 @@ public:
                   }
                   // mm_dsp_mm(mac_i[0], mac_i[1], mac_i[2], mac_i[3], &mac_tmp, clear, dsp_clk);
                   mm_dsp_mm(a1in_i, b1in_i, a2in_i, b2in_i, &mac_tmp, clear, dsp_clk);
+                  mm_dsp_mm(a11in_i,b1in_i, a21in_i,b2in_i, &mac_tmp, clear, dsp_clk);
                   if (mac_tmp >= 16384)
                   {
                     accum_out = 16384;
