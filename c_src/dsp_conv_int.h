@@ -194,7 +194,8 @@ public:
 
   // Convolution computation kernel Tm, Tn based
   void conv_engine(
-      int16_t in_buf[Tn][IBUF_t][IBUF_t],
+      int16_t in_buf_l[Tn][IBUF_t][IBUF_t],
+	  int16_t in_buf_r[Tn][IBUF_t][IBUF_t],
       int16_t w_buf[Tn][Tm][K_max][K_max],
       int16_t b_buf[Tm],
       int16_t out_buf[Tm][Tr][Tc],
@@ -224,21 +225,12 @@ public:
     ap_uint<4> i_index;
     ap_uint<8> j_index;
 
-    int16_t a1in_i;
-    int16_t a2in_i;
-    int16_t a11in_i;
-    int16_t a21in_i;
-    int16_t b1in_i;
-    int16_t b2in_i;
-
-
-    int16_t mac_i[4];
-#pragma HLS ARRAY_PARTITION variable = mac_i complete dim = 1
-
-    int16_t a1in_o;
-    int16_t a2in_o;
-    int16_t b1in_o;
-    int16_t b2in_o;
+    int16_t w1in_i;
+    int16_t w2in_i;
+    int16_t i01in_i;
+    int16_t i02in_i;
+    int16_t i11in_i;
+    int16_t i12in_i;
 
     int16_t accum_out = 0;
     int32_t mac_tmp = 0;
@@ -253,6 +245,8 @@ public:
 
 #pragma HLS ARRAY_PARTITION variable = i_tmp_0 complete dim = 1
 #pragma HLS ARRAY_PARTITION variable = i_tmp_1 complete dim = 1
+#pragma HLS ARRAY_PARTITION variable = i_tmp_2 complete dim = 1
+#pragma HLS ARRAY_PARTITION variable = i_tmp_3 complete dim = 1
 
     if (n >= 0 && n - Tn < N)
     {
@@ -272,36 +266,31 @@ public:
 #pragma HLS UNROLL
               for (j_index = 0; j_index < IBUF_t; j_index++)
               {
-                i_tmp_0[i_index][j_index] = in_buf[2 * i_index][f_h_tmp][j_index];
-                i_tmp_1[i_index][j_index] = in_buf[2 * i_index + 1][f_h_tmp][j_index];
-//                i_tmp_2[i_index][j_index] = in_buf[4 * i_index][f_h_tmp][j_index];
-//                i_tmp_3[i_index][j_index] = in_buf[4 * i_index][f_h_tmp][j_index];
+                i_tmp_0[i_index][j_index] = in_buf_l[2 * i_index][f_h_tmp][j_index];
+                i_tmp_1[i_index][j_index] = in_buf_l[2 * i_index + 1][f_h_tmp][j_index];
+                i_tmp_2[i_index][j_index] = in_buf_r[2 * i_index][f_h_tmp][j_index];
+                i_tmp_3[i_index][j_index] = in_buf_r[2 * i_index + 1][f_h_tmp][j_index];
               }
             }
 
             for (tc = 0; tc < Tc; tc++)
             {
               f_w_tmp = S * (tc) + ker_1;
-              for (tm = 0; tm < Tm; tm = tm + 2)
+              for (tm = 0; tm < Tm; tm = tm + 1)
               {
 #pragma HLS UNROLL
                 for (tn = 0; tn < Tn; tn = tn + 2)
                 {
 #pragma HLS UNROLL
-                  a1in_i = w_buf[tn][tm][i_tmp][ker_1];
-                  a2in_i = w_buf[tn + 1][tm][i_tmp][ker_1];
+                  w1in_i = w_buf[tn][tm][i_tmp][ker_1];
+                  w2in_i = w_buf[tn + 1][tm][i_tmp][ker_1];
 
-                  a11in_i = w_buf[tn][tm+1][i_tmp][ker_1];
-                  a21in_i = w_buf[tn + 1][tm+1][i_tmp][ker_1];
+                  i01in_i = i_tmp_0[tn >> 1][f_w_tmp];
+                  i02in_i = i_tmp_1[tn >> 1][f_w_tmp];
 
-                  b1in_i = i_tmp_0[tn >> 1][f_w_tmp];
-                  b2in_i = i_tmp_1[tn >> 1][f_w_tmp];
-                  /*
-                  mac_i[0] = w_buf[tn][tm][i_tmp][ker_1];
-                  mac_i[1] = w_buf[tn + 1][tm][i_tmp][ker_1];
-                  mac_i[2] = i_tmp_0[tn >> 1][f_w_tmp];
-                  mac_i[3] = i_tmp_1[tn >> 1][f_w_tmp];
-                  */
+                  i11in_i = i_tmp_2[tn >> 1][f_w_tmp];
+                  i12in_i = i_tmp_3[tn >> 1][f_w_tmp];
+
                   if (ker_0 == 0 && ker_1 == 0 && tn == 0 && n == 0)
                   {
                     clear = 0;
@@ -314,8 +303,8 @@ public:
                     mac_tmp = out_buf[tm][tr][tc];
                   }
                   // mm_dsp_mm(mac_i[0], mac_i[1], mac_i[2], mac_i[3], &mac_tmp, clear, dsp_clk);
-                  mm_dsp_mm(a1in_i, b1in_i, a2in_i, b2in_i, &mac_tmp, clear, dsp_clk);
-                  mm_dsp_mm(a11in_i,b1in_i, a21in_i,b2in_i, &mac_tmp, clear, dsp_clk);
+                  mm_dsp_mm(w1in_i, i01in_i, w2in_i, i02in_i, &mac_tmp, clear, dsp_clk);
+                  mm_dsp_mm(w1in_i, i11in_i, w2in_i, i12in_i, &mac_tmp, clear, dsp_clk);
                   if (mac_tmp >= 16384)
                   {
                     accum_out = 16384;
@@ -450,6 +439,7 @@ public:
     }
   };
 
+  /*
   void conv_core_1i1o(
       int N,     //input feature number
       int K,     //input kernel size
@@ -628,7 +618,7 @@ public:
       }
     }
   };
-
+*/
   ///------------------conv accelerator----------------///
   void conv_core_2i2o(
       int N,     //input feature number
@@ -661,12 +651,14 @@ public:
     //#pragma HLS inline off
     //local data buffer groups
     // T in_buf_0[Tn][(Tr - 1) * S_max + K_max][(Tc - 1) * S_max + K_max];
-    T in_buf_0[Tn][IBUF_t][IBUF_t];
+    T in_buf_00[Tn][IBUF_t][IBUF_t];
+    T in_buf_01[Tn][IBUF_t][IBUF_t];
     W w_buf_0[Tn][Tm][K_max][K_max];
     W b_buf_0[Tm];
 
     // T in_buf_1[Tn][(Tr - 1) * S_max + K_max][(Tc - 1) * S_max + K_max];
-    T in_buf_1[Tn][IBUF_t][IBUF_t];
+    T in_buf_10[Tn][IBUF_t][IBUF_t];
+    T in_buf_11[Tn][IBUF_t][IBUF_t];
     W w_buf_1[Tn][Tm][K_max][K_max];
     W b_buf_1[Tm];
 
@@ -683,16 +675,20 @@ public:
     ap_uint<8> loop_counter_m;
     //    bool clk2;
 
-#pragma HLS resource variable = in_buf_0 core = RAM_2P
-#pragma HLS ARRAY_PARTITION variable = in_buf_0 complete dim = 1
-// #pragma HLS ARRAY_PARTITION variable = in_buf_0 block factor = 2 dim = 2
+#pragma HLS resource variable = in_buf_00 core = RAM_2P
+#pragma HLS ARRAY_PARTITION variable = in_buf_00 complete dim = 1
+#pragma HLS resource variable = in_buf_01 core = RAM_2P
+#pragma HLS ARRAY_PARTITION variable = in_buf_01 complete dim = 1
+
 #pragma HLS ARRAY_PARTITION variable = w_buf_0 complete dim = 1
 #pragma HLS ARRAY_PARTITION variable = w_buf_0 complete dim = 2
 #pragma HLS ARRAY_PARTITION variable = b_buf_0 complete
 
-#pragma HLS resource variable = in_buf_1 core = RAM_2P
-#pragma HLS ARRAY_PARTITION variable = in_buf_1 complete dim = 1
-// #pragma HLS ARRAY_PARTITION variable = in_buf_1 block factor = 2 dim = 2
+#pragma HLS resource variable = in_buf_10 core = RAM_2P
+#pragma HLS ARRAY_PARTITION variable = in_buf_10 complete dim = 1
+#pragma HLS resource variable = in_buf_11 core = RAM_2P
+#pragma HLS ARRAY_PARTITION variable = in_buf_11 complete dim = 1
+
 #pragma HLS ARRAY_PARTITION variable = w_buf_1 complete dim = 1
 #pragma HLS ARRAY_PARTITION variable = w_buf_1 complete dim = 2
 #pragma HLS ARRAY_PARTITION variable = b_buf_1 complete
@@ -725,7 +721,8 @@ public:
                 cout << "----LOOP_N: load input buffer set 0" << endl;
                 b_buf_load(b_buf_0, i_bias, bias_offset, m);
                 w_buf_load(w_buf_0, i_weight, weight_offset, n, m, K, N, M);
-                in_buf_load(in_buf_0, i_data, in_offset, n, r, c, S, K, P, R_IN, C_IN, N);
+                in_buf_load(in_buf_00, i_data, in_offset, n, r, c, S, K, P, R_IN, C_IN, N);
+                in_buf_load(in_buf_01, i_data, in_offset, n, r, c, S, K, P, R_IN, C_IN, N);
                 // }
                 // else
                 // {
@@ -733,7 +730,7 @@ public:
                 // }
                 // print_inputbuf(in_buf_0, 4, 10, 10);
                 cout << "----LOOP_N: Process input buffer set 1:   ";
-                conv_engine(in_buf_1, w_buf_1, b_buf_1, out_buf_0, S, n - Tn, N, r, c, K, R_OUT, C_OUT, 0, 0, clk2);
+                conv_engine(in_buf_10, in_buf_11, w_buf_1, b_buf_1, out_buf_0, S, n - Tn, N, r, c, K, R_OUT, C_OUT, 0, 0, clk2);
                 cout << "----LOOP_N: Output out buf 1" << endl;
                 output_res(out_buf_1, out_data, out_offset, n, m - Tm, r, c, N, M, R_OUT, C_OUT, act);
               }
@@ -744,7 +741,8 @@ public:
                 cout << "----LOOP_N: load input buffer set 1" << endl;
                 b_buf_load(b_buf_1, i_bias, bias_offset, m);
                 w_buf_load(w_buf_1, i_weight, weight_offset, n, m, K, N, M);
-                in_buf_load(in_buf_1, i_data, in_offset, n, r, c, S, K, P, R_IN, C_IN, N);
+                in_buf_load(in_buf_10, i_data, in_offset, n, r, c, S, K, P, R_IN, C_IN, N);
+                in_buf_load(in_buf_11, i_data, in_offset, n, r, c, S, K, P, R_IN, C_IN, N);
                 // }
                 // else
                 // {
@@ -752,7 +750,7 @@ public:
                 // }
                 // print_inputbuf(in_buf_0, 4, 10, 10);
                 cout << "----LOOP_N: Process buffer set 0:   ";
-                conv_engine(in_buf_0, w_buf_0, b_buf_0, out_buf_0, S, n - Tn, N, r, c, K, R_OUT, C_OUT, 0, 0, clk2);
+                conv_engine(in_buf_00, in_buf_01, w_buf_0, b_buf_0, out_buf_0, S, n - Tn, N, r, c, K, R_OUT, C_OUT, 0, 0, clk2);
                 cout << "----LOOP_N: Output out buf 1" << endl;
                 output_res(out_buf_1, out_data, out_offset, n, m - Tm, r, c, N, M, R_OUT, C_OUT, act);
               }
@@ -775,7 +773,8 @@ public:
                 cout << "----LOOP_N: load input buffer set 0" << endl;
                 b_buf_load(b_buf_0, i_bias, bias_offset, m);
                 w_buf_load(w_buf_0, i_weight, weight_offset, n, m, K, N, M);
-                in_buf_load(in_buf_0, i_data, in_offset, n, r, c, S, K, P, R_IN, C_IN, N);
+                in_buf_load(in_buf_00, i_data, in_offset, n, r, c, S, K, P, R_IN, C_IN, N);
+                in_buf_load(in_buf_01, i_data, in_offset, n, r, c, S, K, P, R_IN, C_IN, N);
                 // }
                 // else
                 // {
@@ -783,7 +782,7 @@ public:
                 // }
                 // print_inputbuf(in_buf_0, 4, 10, 10);
                 cout << "----LOOP_N: Process input buffer set 1:    ";
-                conv_engine(in_buf_1, w_buf_1, b_buf_1, out_buf_1, S, n - Tn, N, r, c, K, R_OUT, C_OUT, 0, 0, clk2);
+                conv_engine(in_buf_10, in_buf_11, w_buf_1, b_buf_1, out_buf_1, S, n - Tn, N, r, c, K, R_OUT, C_OUT, 0, 0, clk2);
                 cout << "----LOOP_N: Output out buf 0" << endl;
                 output_res(out_buf_0, out_data, out_offset, n, m - Tm, r, c, N, M, R_OUT, C_OUT, act);
               }
@@ -792,10 +791,11 @@ public:
                 cout << "----LOOP_N: load input buffer set 1" << endl;
                 b_buf_load(b_buf_1, i_bias, bias_offset, m);
                 w_buf_load(w_buf_1, i_weight, weight_offset, n, m, K, N, M);
-                in_buf_load(in_buf_1, i_data, in_offset, n, r, c, S, K, P, R_IN, C_IN, N);
+                in_buf_load(in_buf_10, i_data, in_offset, n, r, c, S, K, P, R_IN, C_IN, N);
+                in_buf_load(in_buf_11, i_data, in_offset, n, r, c, S, K, P, R_IN, C_IN, N);
                 // print_inputbuf(in_buf_0, 4, 10, 10);
                 cout << "----LOOP_N: Process input buffer set 0:   ";
-                conv_engine(in_buf_0, w_buf_0, b_buf_0, out_buf_1, S, n - Tn, N, r, c, K, R_OUT, C_OUT, 0, 0, clk2);
+                conv_engine(in_buf_00, in_buf_01, w_buf_0, b_buf_0, out_buf_1, S, n - Tn, N, r, c, K, R_OUT, C_OUT, 0, 0, clk2);
                 cout << "----LOOP_N: Output out buf 0" << endl;
                 output_res(out_buf_0, out_data, out_offset, n, m - Tm, r, c, N, M, R_OUT, C_OUT, act);
               }
