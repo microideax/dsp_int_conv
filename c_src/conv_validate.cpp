@@ -4,7 +4,7 @@
 #include "conv_validate.h"
 using namespace std;
 
-
+/*
 conv_validate::conv_validate(ap_uint<32>* param_list)
 {
 	int i,j,k;
@@ -32,8 +32,6 @@ conv_validate::conv_validate(ap_uint<32>* param_list)
 		for(j = 0 ; j < 16 * 16;j++)
 			input_feature[j].range(15+16*i,16*i) = 64;
 	}
-
-
 
 
 	for(i = 0 ; i < 9;i++)
@@ -68,10 +66,10 @@ conv_validate::conv_validate(ap_uint<32>* param_list)
 //		weight[i].range(15,0) = 64;
 //	}
 }
+*/
 
 
-
-
+/*
 void conv_validate :: print_feature_in(void)
 {
 	int i,j;
@@ -185,4 +183,7 @@ void conv_validate :: print_feature_in(void)
 //{
 //	cout << "class test : "<< outputfeature_size << endl;
 //	cout << (int)(ceil((double)num_input/32)) << endl;
+
 //}
+
+ */

@@ -35,7 +35,7 @@ void conv_layer_proc(
 #pragma HLS pipeline
     param_conv_local[i] = param_port[i];
   }
-  conv_layer_acc.conv_core_2i2o(param_conv_local[0],  // N
+  conv_layer_acc.conv_core_1i1o(param_conv_local[0],  // N
                                 param_conv_local[1],  // K
                                 param_conv_local[2],  // M
                                 param_conv_local[3],  // Rin
@@ -212,7 +212,7 @@ int main()
   // display b_buf
   cout << endl;
   cout << endl;
-  cout << "The bias buffer:" << endl;
+  cout << "main: The bias buffer:" << endl;
   for (int i = 0; i < param[2]; i++)
   {
     cout << b_port[i] << "  ";
@@ -222,7 +222,7 @@ int main()
   // display output buffer
   cout << endl;
   cout << endl;
-  cout << "The output buffer:" << endl;
+  cout << "main: The output buffer:" << endl;
   for (int i = 0; i < param[2]; i++)
   {
     for (int j = 0; j < param[6]; j++)

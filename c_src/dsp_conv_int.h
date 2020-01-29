@@ -195,7 +195,7 @@ public:
   // Convolution computation kernel Tm, Tn based
   void conv_engine(
       int16_t in_buf_l[Tn][IBUF_t][IBUF_t],
-	  int16_t in_buf_r[Tn][IBUF_t][IBUF_t],
+//	  int16_t in_buf_r[Tn][IBUF_t][IBUF_t],
       int16_t w_buf[Tn][Tm][K_max][K_max],
       int16_t b_buf[Tm],
       int16_t out_buf[Tm][Tr][Tc],
@@ -268,8 +268,8 @@ public:
               {
                 i_tmp_0[i_index][j_index] = in_buf_l[2 * i_index][f_h_tmp][j_index];
                 i_tmp_1[i_index][j_index] = in_buf_l[2 * i_index + 1][f_h_tmp][j_index];
-                i_tmp_2[i_index][j_index] = in_buf_r[2 * i_index][f_h_tmp][j_index];
-                i_tmp_3[i_index][j_index] = in_buf_r[2 * i_index + 1][f_h_tmp][j_index];
+//                i_tmp_2[i_index][j_index] = in_buf_r[2 * i_index][f_h_tmp][j_index];
+//                i_tmp_3[i_index][j_index] = in_buf_r[2 * i_index + 1][f_h_tmp][j_index];
               }
             }
 
@@ -288,8 +288,8 @@ public:
                   i01in_i = i_tmp_0[tn >> 1][f_w_tmp];
                   i02in_i = i_tmp_1[tn >> 1][f_w_tmp];
 
-                  i11in_i = i_tmp_2[tn >> 1][f_w_tmp];
-                  i12in_i = i_tmp_3[tn >> 1][f_w_tmp];
+//                  i11in_i = i_tmp_2[tn >> 1][f_w_tmp];
+//                  i12in_i = i_tmp_3[tn >> 1][f_w_tmp];
 
                   if (ker_0 == 0 && ker_1 == 0 && tn == 0 && n == 0)
                   {
@@ -304,7 +304,7 @@ public:
                   }
                   // mm_dsp_mm(mac_i[0], mac_i[1], mac_i[2], mac_i[3], &mac_tmp, clear, dsp_clk);
                   mm_dsp_mm(w1in_i, i01in_i, w2in_i, i02in_i, &mac_tmp, clear, dsp_clk);
-                  mm_dsp_mm(w1in_i, i11in_i, w2in_i, i12in_i, &mac_tmp, clear, dsp_clk);
+//                  mm_dsp_mm(w1in_i, i11in_i, w2in_i, i12in_i, &mac_tmp, clear, dsp_clk);
                   if (mac_tmp >= 16384)
                   {
                     accum_out = 16384;
@@ -389,7 +389,7 @@ public:
 
     idx_tm = m >> 2;
     // if (n >= N - Tn && m > 0)
-    if (n >= N - Tn && n < N && m >= 0)
+    if (n >= N - Tn && m > 0)
     {
       cout << "output buffer data: " << n << " " << m << endl;
       for (tr = 0; tr < Tr; tr++)
@@ -398,14 +398,15 @@ public:
         {
 #pragma HLS PIPELINE
           //*(out_data + out_offset + tm * Tr * Tc + tr * Tc + tc) = out_buf[tm][tr][tc];
-
-          for (d_idx = 0; d_idx < 4; d_idx++)
-          {
+        	for(idx_tm = 0; idx_tm < Tm; idx_tm+=4){
+        		for (d_idx = 0; d_idx < 4; d_idx++)
+        		{
 #pragma HLS UNROLL
-            local_o_buf.range(16 * d_idx + 15, 16 * d_idx) = out_buf[d_idx][tr][tc];
-            // cout << "Fill local buffer: " << idx_n << " " << idx_r << " " << idx_k << " " << buf_0[d_idx][j][k] << "  " << local_i_buf << endl;
+        			local_o_buf.range(16 * d_idx + 15, 16 * d_idx) = out_buf[d_idx][tr][tc];
+        			// cout << "Fill local buffer: " << idx_n << " " << idx_r << " " << idx_k << " " << buf_0[d_idx][j][k] << "  " << local_i_buf << endl;
+        		}
+        		*(out_data + out_offset + idx_tm * Tr * Tc + tr * Tc + tc) = local_o_buf.range(63, 0);
           }
-          *(out_data + out_offset + idx_tm * Tr * Tc + tr * Tc + tc) = local_o_buf.range(63, 0);
         }
       }
     }
@@ -415,7 +416,8 @@ public:
     }
   };
 
-  void print_inputbuf(
+  void print_3dbuf_i(
+	  char *arrayname,
       int16_t array_name[][IBUF_t][IBUF_t],
       int dim_n,
       int dim_r,
@@ -424,7 +426,7 @@ public:
     // display in_buf
     cout << endl;
     cout << endl;
-    cout << "Printing input buffer" << endl;
+    cout << "Printing "<<arrayname <<" buffer" << endl;
     for (int i = 0; i < dim_n; i++)
     {
       for (int j = 0; j < dim_r; j++)
@@ -439,7 +441,31 @@ public:
     }
   };
 
-  /*
+  void print_3dbuf_o(
+	  char *arrayname,
+      int16_t array_name[][Tr][Tc],
+      int dim_n,
+      int dim_r,
+      int dim_c)
+  {
+    // display in_buf
+    cout << endl;
+    cout << endl;
+    cout << "Printing "<<arrayname <<" buffer" << endl;
+    for (int i = 0; i < dim_n; i++)
+    {
+      for (int j = 0; j < dim_r; j++)
+      {
+        for (int k = 0; k < dim_c; k++)
+        {
+          cout << array_name[i][j][k] << "  ";
+        }
+        cout << endl;
+      }
+      cout << endl;
+    }
+  };
+
   void conv_core_1i1o(
       int N,     //input feature number
       int K,     //input kernel size
@@ -464,7 +490,7 @@ public:
     int16_t *i_weight,
     int16_t *i_data,
 #endif
-      int16_t *out_data,
+      ap_uint<64> *out_data,
       bool clk2)
   {
 
@@ -493,14 +519,15 @@ public:
         {
           for (int n = 0; n < N; n += Tn)
           {
-            cout << "load buffer set 0" << endl;
+//            cout << "load buffer set 0" << endl;
             b_buf_load(b_buf_0, i_bias, bias_offset, m);
             w_buf_load(w_buf_0, i_weight, weight_offset, n, m, K, N, M);
-            cout << "Loading location: " << n << " " << r << " " << c << " " << N << " " << endl;
+            cout << "Loading location: " << m << " " << n << " " << r << " " << c << " " << N << " " << M << " " << endl;
             in_buf_load(in_buf_0, i_data, in_offset, n, r, c, S, K, P, R_IN, C_IN, N);
-            print_inputbuf(in_buf_0, Tn, IBUF_t, IBUF_t);
-            cout << "Process buffer set 0" << endl;
+            print_3dbuf_i("in_buf", in_buf_0, Tn, IBUF_t, IBUF_t);
+//            cout << "Process buffer set 0" << endl;
             conv_engine(in_buf_0, w_buf_0, b_buf_0, out_buf_0, S, n, N, r, c, K, R_OUT, C_OUT, 0, 0, clk2);
+            print_3dbuf_o("o_buf", out_buf_0, Tm, Tr, Tc);
           }
           output_res(out_buf_0, out_data, out_offset, N, m, r, c, N, M, R_OUT, C_OUT, act);
         }
@@ -618,7 +645,7 @@ public:
       }
     }
   };
-*/
+
   ///------------------conv accelerator----------------///
   void conv_core_2i2o(
       int N,     //input feature number
