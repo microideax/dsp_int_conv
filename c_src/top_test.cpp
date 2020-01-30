@@ -7,7 +7,7 @@ using namespace std;
 
 //#define IN_PORT_WIDTH 64
 
-dsp_conv_int<int16_t, int16_t, int16_t, int16_t, int16_t, 4, 4, 8, 8, 1, 3, 10, 16, 16> conv_layer_acc;
+dsp_conv_int<int16_t, int16_t, int16_t, int16_t, int16_t, 16, 4, 8, 8, 1, 3, 10, 16, 16> conv_layer_acc;
 
 void conv_layer_proc(
     int *param_port,
@@ -15,11 +15,12 @@ void conv_layer_proc(
 #if IN_PORT_WIDTH == 64
     ap_uint<64> *weight_in,
     ap_uint<64> *data_in,
+	ap_uint<64> *data_out,
 #else
     int16_t *weight_in,
     int16_t *data_in,
+	int16_t *data_out,
 #endif
-    ap_uint<64> *data_out,
     bool dsp_clk)
 {
 
@@ -63,11 +64,12 @@ void sub_net_proc(
 #if IN_PORT_WIDTH == 64
     ap_uint<64> weight_in[64],
     ap_uint<64> data_in[1024],
+	ap_uint<64> data_out[1024],
 #else
     int16_t weight_in[256],
     int16_t data_in[1024],
+	int16_t data_out[1024],
 #endif
-    ap_uint<64> data_out[1024],
     bool dsp_clk)
 {
 
@@ -99,18 +101,18 @@ int main()
 #if IN_PORT_WIDTH == 64
   ap_uint<64> in_port[4096];
   ap_uint<64> w_port[256];
+  ap_uint<64> out_port[1024];
 #else
   int16_t in_port[1024];
   int16_t w_port[256];
+  int16_t out_port[1024];
 #endif
   ap_uint<64> i_tmp_buf = ap_uint<64>(0);
   ap_uint<64> w_tmp_buf = ap_uint<64>(0);
   int16_t w_buf[4][4][3][3];
-  // int16_t b_buf[4];
   int16_t b_port[256];
   bool dsp_clk;
   int32_t out_buf[4][8][8];
-  ap_uint<64> out_port[1024];
 
   int param[16] = {
       4,
@@ -223,18 +225,35 @@ int main()
   cout << endl;
   cout << endl;
   cout << "main: The output buffer:" << endl;
-  for (int i = 0; i < param[2]; i++)
+  ap_uint<64> o_tmp = 0;
+  ap_uint<16> o_tmp_3d[8][8][8];
+  ap_uint<16> data_reg;
+  for (int i = 0; i < param[2]; i+=4)
   {
-    for (int j = 0; j < param[6]; j++)
+    for (int j = 0; j < param[5]; j++)
     {
       for (int k = 0; k < param[6]; k++)
       {
-        cout << *(out_port + i * param[6] * param[6] + j * param[6] + k) << "  ";
+        o_tmp = *(out_port + (i/4) * param[5] * param[6] + j * param[6] + k);
+        for (int idx = 0; idx < 4; idx++){
+        	data_reg.range(15,0) = o_tmp.range(idx*16 + 15, idx * 16);
+        	o_tmp_3d[i + idx][j][k] = data_reg;
+        }
       }
-      cout << endl;
+//      cout << endl;
     }
-    cout << endl;
+//    cout << endl;
   }
+  for (int i = 0; i < param[2]; i++){
+	  for(int j = 0; j < param[5]; j++){
+		  for(int k = 0; k < param[6]; k++){
+			  cout<< o_tmp_3d[i][j][k] << " ";
+		  }
+		  cout << endl;
+	  }
+	  cout << endl;
+  }
+  cout << endl;
 
   return 0;
 };

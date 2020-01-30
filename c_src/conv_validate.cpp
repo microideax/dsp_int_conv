@@ -4,8 +4,8 @@
 #include "conv_validate.h"
 using namespace std;
 
-/*
-conv_validate::conv_validate(ap_uint<32>* param_list)
+
+conv_validate::conv_validate(int *param_list)
 {
 	int i,j,k;
 	int input_num;
@@ -13,43 +13,44 @@ conv_validate::conv_validate(ap_uint<32>* param_list)
 	int output_num;
 
 	this->param_list = param_list;
-	input_num = param_list[16+0];
-	input_feature_size = param_list[16+3];
+	this->layer_num = param_list[16];
+//	input_num = param_list[16+0];
+//	input_feature_size = param_list[16+3];
 
-	layer_num = param_list[0];
-	for(i = 0 ; i < 4096; i++)
-		input_feature[i] = 0;
-	for(i = 0 ; i < 2048; i++)
-		weight[i] = 0;
-	for(i = 0 ; i < 4096; i++)
-		output_feature[i] = 0;
-	for(i = 0 ; i < 1024; i++)
-		bias[i] = 0;
-
-
-	for(i = 0 ; i < 1;i++)
-	{
-		for(j = 0 ; j < 16 * 16;j++)
-			input_feature[j].range(15+16*i,16*i) = 64;
-	}
-
-
-	for(i = 0 ; i < 9;i++)
-	{
-		weight[i].range(15,0) = 16;
-	}
-
-
-	for(i = 0 ; i < 9;i++)
-	{
-		weight[i].range(16+15,16+0) = 0;
-	}
-
-	for(i = 0 ; i < 9;i++)
-	{
-		weight[i].range(16*2+15,16*2+0) = 0;
-	}
-
+//	layer_num = param_list[0];
+//	for(i = 0 ; i < 4096; i++)
+//		input_feature[i] = 0;
+//	for(i = 0 ; i < 2048; i++)
+//		weight[i] = 0;
+//	for(i = 0 ; i < 4096; i++)
+//		output_feature[i] = 0;
+//	for(i = 0 ; i < 1024; i++)
+//		bias[i] = 0;
+//
+//
+//	for(i = 0 ; i < 1;i++)
+//	{
+//		for(j = 0 ; j < 16 * 16;j++)
+//			input_feature[j].range(15+16*i,16*i) = 64;
+//	}
+//
+//
+//	for(i = 0 ; i < 9;i++)
+//	{
+//		weight[i].range(15,0) = 16;
+//	}
+//
+//
+//	for(i = 0 ; i < 9;i++)
+//	{
+//		weight[i].range(16+15,16+0) = 0;
+//	}
+//
+//	for(i = 0 ; i < 9;i++)
+//	{
+//		weight[i].range(16*2+15,16*2+0) = 0;
+//	}
+//
 
 
 
@@ -65,8 +66,8 @@ conv_validate::conv_validate(ap_uint<32>* param_list)
 //	{
 //		weight[i].range(15,0) = 64;
 //	}
-}
-*/
+};
+
 
 
 /*
@@ -105,20 +106,43 @@ void conv_validate :: print_feature_in(void)
 //		cout << i << ":" << bias[i] <<endl;
 //}
 //
-//
-//void conv_validate :: print_feature_out(void)
-//{
-//	int i,j;
-//	cout <<"feature out:"<<endl;
-//	for(i = 0 ; i < outputfeature_size * outputfeature_size * (int)(ceil(double(num_output)/32)); i++)
-//	{
-//		cout <<i<<":";
-//		for(j = 0 ; j < 32; j++)
-//			cout <<output_feature[i].range(15+16*j,16*j) <<" ";
-//		cout << endl;
-//	}
-//}
-//
+*/
+
+void conv_validate :: print_feature_out(void)
+{
+
+	ap_uint<64> o_tmp = 0;
+	ap_uint<16> o_tmp_3d[8][8][8];
+	ap_uint<16> data_reg;
+	for (int i = 0; i < param_list[2]; i+=4)
+	{
+	  for (int j = 0; j < param_list[5]; j++)
+	  {
+	    for (int k = 0; k < param_list[6]; k++)
+	    {
+	      o_tmp = *(output_feature + (i/4) * param_list[5] * param_list[6] + j * param_list[6] + k);
+	      for (int idx = 0; idx < 4; idx++){
+	      data_reg.range(15,0) = o_tmp.range(idx*16 + 15, idx * 16);
+	      o_tmp_3d[i + idx][j][k] = data_reg;
+	     }
+	   }
+	   cout << endl;
+	  }
+	 cout << endl;
+	  }
+	  for (int i = 0; i < param_list[2]; i++){
+		  for(int j = 0; j < param_list[5]; j++){
+			  for(int k = 0; k < param_list[6]; k++){
+				  cout<< o_tmp_3d[i][j][k] << " ";
+			  }
+			  cout << endl;
+		  }
+		  cout << endl;
+	  }
+	  cout << endl;
+};
+
+/*
 //void conv_validate :: software_conv_process(void)       //assume padding = 2
 //{
 //	int i,j,k,x,y,z;

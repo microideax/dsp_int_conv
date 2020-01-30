@@ -16,7 +16,7 @@ public:
   ap_uint<64> output_feature[4096];
   ap_uint<64> output_feature_software[4096];
   ap_int<16> bias[1024];
-  ap_int<16> *param_list;
+  int *param_list;
 #else
 #define IN_PORT_WIDTH == 512
   ap_int<512> weight[16384];
@@ -24,10 +24,10 @@ public:
   ap_int<512> output_feature[4096];
   ap_int<512> output_feature_software[4096];
   ap_fixed<32, 26> bias[1024];
-  ap_uint<32> *param_list;
+  int *param_list;
 #endif
 
-  conv_validate(ap_uint<32> *param_list); //(int layer_num, int num_input,int num_output,int kernel_size,int stride,int padding, int inputfeature_size, int inport);
+  conv_validate(int *param_list); //(int layer_num, int num_input,int num_output,int kernel_size,int stride,int padding, int inputfeature_size, int inport);
 
   void prepare_weight(void);
   void prepare_bias(void);
