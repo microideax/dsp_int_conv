@@ -109,7 +109,7 @@ void conv_validate::print_weight(void)
 		{
 			for(k1 = 0; k1 < K; k1++){
 				for(k2 = 0; k2 < K; k2++){
-					w_buf_software[i][j][k1][k2] = w_port[i*(j/4)*k1*k2 + (j/4)*k1*k2 + k1*k2 + k2].range(16*(j%4)+15, 16*(j%4));
+//					w_buf_software[i][j][k1][k2] = w_port[i*(j/4)*k1*k2 + (j/4)*k1*k2 + k1*k2 + k2].range(16*(j%4)+15, 16*(j%4));
 				}
 			}
 		}
