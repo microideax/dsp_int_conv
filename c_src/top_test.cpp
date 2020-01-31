@@ -14,6 +14,7 @@ int main()
 {
 
   int16_t in_buf[4][10][10];
+  bool dsp_clk;
   /*
 #if IN_PORT_WIDTH == 64
   ap_uint<64> in_port[4096];
@@ -28,7 +29,6 @@ int main()
   ap_uint<64> w_tmp_buf = ap_uint<64>(0);
   int16_t w_buf[4][4][3][3];
   int16_t b_port[256];
-  bool dsp_clk;
   int32_t out_buf[4][8][8];
 */
   int param[16] = {
@@ -53,27 +53,17 @@ int main()
 
   cout<< "initialized layer: N="<< layer_test.N << " M=" << layer_test.M << " Ri="<< layer_test.Ri << " K=" << layer_test.K << endl;
 //  layer_test.print_weight_software();
-  layer_test.print_weight();
+//  layer_test.print_weight();
 //  layer_test.compare_s_h_weight();
+  layer_test.test_initialize();
 
-  // cout << "inport data: " << endl;
-  // for (int idx = 0; idx < 400; idx++)
-  // {
-  //   cout << *(in_port + idx) << endl;
-  // }
-
-
-//  sub_net_proc(param, b_port, w_port, in_port, out_port, dsp_clk);
+  sub_net_proc(layer_test.param_list, layer_test.b_port, layer_test.w_port, layer_test.i_port, layer_test.o_port, dsp_clk);
 /*
   // display b_buf
   cout << endl;
   cout << endl;
   cout << "main: The bias buffer:" << endl;
-  for (int i = 0; i < param[2]; i++)
-  {
-    cout << b_port[i] << "  ";
-  }
-  cout << endl;
+
 
   // display output buffer
   cout << endl;

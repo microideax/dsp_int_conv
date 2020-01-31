@@ -84,6 +84,8 @@ void sub_net_proc(
 
 #pragma HLS INTERFACE ap_stable port = dsp_clk
 
+	cout << "Accelerator configuration: Tm=" <<conv_layer_acc.accTm << " ,Tn="<< conv_layer_acc.accTn << " ,Tr="<< conv_layer_acc.accTr << " ,Tc="<< conv_layer_acc.accTc << endl;
+
   conv_layer_proc(param_port,
                   bias_port,
                   weight_in,

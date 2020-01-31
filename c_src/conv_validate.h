@@ -16,7 +16,7 @@ public:
   ap_uint<64> w_port[1024];
   ap_uint<64> i_port[4096];
   ap_uint<64> o_port[4096];
-  ap_int<16>  b_port[1024];
+  int16_t  b_port[1024];
 #else
 #define IN_PORT_WIDTH == 512
   ap_int<512> w_port[16384];
@@ -34,6 +34,7 @@ public:
 
   conv_validate(int *param_list); //(int layer_num, int num_input,int num_output,int kernel_size,int stride,int padding, int inputfeature_size, int inport);
 
+  void test_initialize(void);
   void prepare_weight(void);
   void prepare_bias(void);
   void prepare_feature_in(void);

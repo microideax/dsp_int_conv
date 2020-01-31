@@ -15,7 +15,16 @@ class dsp_conv_int
 {
 
 public:
-  dsp_conv_int() { ; }
+	int accTm, accTn, accTr, accTc, accS, accK, accIBUF_t;
+  dsp_conv_int() {
+	  this->accTm = Tm;
+	  this->accTn = Tn;
+	  this->accTr = Tr;
+	  this->accTc = Tc;
+	  this->accS = S_max;
+	  this->accK = K_max;
+	  this->accIBUF_t = IBUF_t;
+  }
 
   ////-----------------------------Accelerator Functions---------------------------------------////
   // dsp computation cores
@@ -250,7 +259,7 @@ public:
 
     if (n >= 0 && n - Tn < N)
     {
-      cout << "Executing conv engine at n = " << n << endl;
+//      cout << "Executing conv engine at n = " << n << endl;
       for (ker_0 = 0; ker_0 < K; ker_0++)
       {
         i_tmp = ker_0 + w_offset;
@@ -389,7 +398,7 @@ public:
 
     idx_tm = m >> 2;
     // if (n >= N - Tn && m > 0)
-    cout << "output buffer data: n=" << n << " m=" << m << endl;
+//    cout << "output buffer data: n=" << n << " m=" << m << endl;
     if (n >= N - Tn)
     {
 //      cout << "output buffer data: " << n << " " << m << endl;
@@ -400,8 +409,8 @@ public:
 #pragma HLS PIPELINE
           //*(out_data + out_offset + tm * Tr * Tc + tr * Tc + tc) = out_buf[tm][tr][tc];
         	for(idx_tm = 0; idx_tm < Tm; idx_tm += 4){
-        		cout << "Squeezing output: m=" << m << " idx_tm=" << idx_tm << " " << (idx_tm/4);
-        		cout << endl;
+//        		cout << "Squeezing output: m=" << m << " idx_tm=" << idx_tm << " " << (idx_tm/4);
+//        		cout << endl;
         		for (d_idx = 0; d_idx < 4; d_idx++)
         		{
 #pragma HLS UNROLL
@@ -567,14 +576,14 @@ public:
 //            cout << "load buffer set 0" << endl;
             b_buf_load(b_buf_0, i_bias, bias_offset, m);
             w_buf_load(w_buf_0, i_weight, weight_offset, n, m, K, N, M);
-            cout << "Loading location: " <<"m="<< m << " n=" << n << " r=" << r << " c=" << c << " N=" << N << " M=" << M << " " << endl;
+//            cout << "Loading location: " <<"m="<< m << " n=" << n << " r=" << r << " c=" << c << " N=" << N << " M=" << M << " " << endl;
             in_buf_load(in_buf_0, i_data, in_offset, n, r, c, S, K, P, R_IN, C_IN, N);
-            print_3dbuf_i("in_buf", in_buf_0, Tn, IBUF_t, IBUF_t);
-            print_wdata("w_data", w_buf_0, Tn, Tm, K);
+//            print_3dbuf_i("in_buf", in_buf_0, Tn, IBUF_t, IBUF_t);
+//            print_wdata("w_data", w_buf_0, Tn, Tm, K);
 //            print_3dbuf_o("o_buf_initial", out_buf_0, Tm, Tr, Tc);
 //            cout << "Process buffer set 0" << endl;
             conv_engine(in_buf_0, w_buf_0, b_buf_0, out_buf_0, S, n, N, r, c, K, R_OUT, C_OUT, 0, 0, clk2);
-            print_3dbuf_o("o_buf_executed", out_buf_0, Tm, Tr, Tc);
+//            print_3dbuf_o("o_buf_executed", out_buf_0, Tm, Tr, Tc);
           }
           output_res_1i1o(out_buf_0, out_data, out_offset, N, m, r, c, N, M, R_OUT, C_OUT, act);
         }
