@@ -59,11 +59,13 @@ conv_validate::conv_validate(int *param_list)
 		{
 			for(int k2 = 0; k2 < K; k2++)
 			{
-				for(int j = 0; j < M; j+=4)
+				for(int j = 0; j < M; j++)
 				{
-					for(int idx = 0; idx < 4; idx++){
-						w_port[i*(j/4)*k1*k2 + (j/4)*k1*k2 + k1*k2 + k2].range(16*idx + 15, 16 * idx) = w_buf_software[i][j+idx][k1][k2];
-					}
+//					for(int idx = 0; idx < 4; idx++){
+					w_port[i*(j/4)*k1*k2 + (j/4)*k1*k2 + k1*k2 + k2].range(16*(j%4) + 15, 16 * (j%4)) = w_buf_software[i][j][k1][k2];
+					cout << "location: i=" << i << " j=" << j << " k1=" << k1 << " k2=" << k2 << " value_i="<< w_port[i*(j/4)*k1*k2 + (j/4)*k1*k2 + k1*k2 + k2].range(16*(j%4)+15, 16*(j%4))
+							<< " value_o="<< w_buf_software[i][j][k1][k2]<< endl;
+//					}
 				}
 			}
 		}
@@ -98,24 +100,6 @@ conv_validate::conv_validate(int *param_list)
 	}
 };
 
-void conv_validate::print_weight(void)
-{
-	int i,j,k1, k2;
-
-	cout << "Print squeezed testing weights:"<<endl;
-	for(j = 0; j < M; j++)
-	{
-		for(i = 0 ; i < N; i++)
-		{
-			for(k1 = 0; k1 < K; k1++){
-				for(k2 = 0; k2 < K; k2++){
-//					w_buf_software[i][j][k1][k2] = w_port[i*(j/4)*k1*k2 + (j/4)*k1*k2 + k1*k2 + k2].range(16*(j%4)+15, 16*(j%4));
-				}
-			}
-		}
-	}
-	print_weight_software();
-};
 
 void conv_validate::print_weight_software(void)
 {
@@ -138,6 +122,26 @@ void conv_validate::print_weight_software(void)
 	cout << "-----------------" << endl;
 };
 
+void conv_validate::print_weight(void)
+{
+	int i,j,k1, k2;
+
+	cout << "Print squeezed testing weights:"<<endl;
+		for(i = 0 ; i < N; i++)
+		{
+			for(k1 = 0; k1 < K; k1++){
+				for(k2 = 0; k2 < K; k2++){
+					for(j = 0; j < M; j++)
+						{
+					w_buf_software[i][j][k1][k2] = w_port[i*(j/4)*k1*k2 + (j/4)*k1*k2 + k1*k2 + k2].range(16*(j%4)+15, 16*(j%4));
+					cout << "location: i=" << i << " j=" << j << " k1=" << k1 << " k2=" << k2 << " value="<< w_port[i*(j/4)*k1*k2 + (j/4)*k1*k2 + k1*k2 + k2].range(16*(j%4)+15, 16*(j%4)) << endl;
+				}
+			}
+		}
+	}
+	print_weight_software();
+};
+
 void conv_validate::compare_s_h_weight(void)
 {
 	int i,j,k1, k2;
@@ -150,14 +154,14 @@ void conv_validate::compare_s_h_weight(void)
 			for(k1 = 0; k1 < K; k1++){
 				for(k2 = 0; k2 < K; k2++){
 					if(w_buf_software[i][j][k1][k2] != w_port[i*(j/4)*k1*k2 + (j/4)*k1*k2 + k1*k2 + k2].range(16*(j%4)+15, 16*(j%4))){
-						cout << "Incompatible software and squeezed weights !!! "<< endl;
+						cout << "Incompatible software and squeezed weights !!! "<< w_buf_software[i][j][k1][k2] << " and "<< w_port[i*(j/4)*k1*k2 + (j/4)*k1*k2 + k1*k2 + k2].range(16*(j%4)+15, 16*(j%4))<< endl;
 					}
 					else {;}
 				}
 			}
 		}
 	}
-	print_weight_software();
+//	print_weight_software();
 };
 
 /*
