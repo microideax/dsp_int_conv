@@ -15,15 +15,16 @@ class dsp_conv_int
 {
 
 public:
-	int accTm, accTn, accTr, accTc, accS, accK, accIBUF_t;
-  dsp_conv_int() {
-	  this->accTm = Tm;
-	  this->accTn = Tn;
-	  this->accTr = Tr;
-	  this->accTc = Tc;
-	  this->accS = S_max;
-	  this->accK = K_max;
-	  this->accIBUF_t = IBUF_t;
+  int accTm, accTn, accTr, accTc, accS, accK, accIBUF_t;
+  dsp_conv_int()
+  {
+    this->accTm = Tm;
+    this->accTn = Tn;
+    this->accTr = Tr;
+    this->accTc = Tc;
+    this->accS = S_max;
+    this->accK = K_max;
+    this->accIBUF_t = IBUF_t;
   }
 
   ////-----------------------------Accelerator Functions---------------------------------------////
@@ -204,7 +205,7 @@ public:
   // Convolution computation kernel Tm, Tn based
   void conv_engine(
       int16_t in_buf_l[Tn][IBUF_t][IBUF_t],
-//	  int16_t in_buf_r[Tn][IBUF_t][IBUF_t],
+      //	  int16_t in_buf_r[Tn][IBUF_t][IBUF_t],
       int16_t w_buf[Tn][Tm][K_max][K_max],
       int16_t b_buf[Tm],
       int16_t out_buf[Tm][Tr][Tc],
@@ -247,10 +248,10 @@ public:
 
     // int16_t i_tmp_0[Tn][(Tc - 1) * S_max + K_max];
     // int16_t i_tmp_1[Tn][(Tc - 1) * S_max + K_max];
-    int16_t i_tmp_0[Tn/2][IBUF_t];
-    int16_t i_tmp_1[Tn/2][IBUF_t];
-    int16_t i_tmp_2[Tn/2][IBUF_t];
-    int16_t i_tmp_3[Tn/2][IBUF_t];
+    int16_t i_tmp_0[Tn / 2][IBUF_t];
+    int16_t i_tmp_1[Tn / 2][IBUF_t];
+    int16_t i_tmp_2[Tn / 2][IBUF_t];
+    int16_t i_tmp_3[Tn / 2][IBUF_t];
 
 #pragma HLS ARRAY_PARTITION variable = i_tmp_0 complete dim = 1
 #pragma HLS ARRAY_PARTITION variable = i_tmp_1 complete dim = 1
@@ -259,7 +260,7 @@ public:
 
     if (n >= 0 && n - Tn < N)
     {
-//      cout << "Executing conv engine at n = " << n << endl;
+      //      cout << "Executing conv engine at n = " << n << endl;
       for (ker_0 = 0; ker_0 < K; ker_0++)
       {
         i_tmp = ker_0 + w_offset;
@@ -277,8 +278,8 @@ public:
               {
                 i_tmp_0[i_index][j_index] = in_buf_l[2 * i_index][f_h_tmp][j_index];
                 i_tmp_1[i_index][j_index] = in_buf_l[2 * i_index + 1][f_h_tmp][j_index];
-//                i_tmp_2[i_index][j_index] = in_buf_r[2 * i_index][f_h_tmp][j_index];
-//                i_tmp_3[i_index][j_index] = in_buf_r[2 * i_index + 1][f_h_tmp][j_index];
+                //                i_tmp_2[i_index][j_index] = in_buf_r[2 * i_index][f_h_tmp][j_index];
+                //                i_tmp_3[i_index][j_index] = in_buf_r[2 * i_index + 1][f_h_tmp][j_index];
               }
             }
 
@@ -297,8 +298,8 @@ public:
                   i01in_i = i_tmp_0[tn >> 1][f_w_tmp];
                   i02in_i = i_tmp_1[tn >> 1][f_w_tmp];
 
-//                  i11in_i = i_tmp_2[tn >> 1][f_w_tmp];
-//                  i12in_i = i_tmp_3[tn >> 1][f_w_tmp];
+                  //                  i11in_i = i_tmp_2[tn >> 1][f_w_tmp];
+                  //                  i12in_i = i_tmp_3[tn >> 1][f_w_tmp];
 
                   if (ker_0 == 0 && ker_1 == 0 && tn == 0 && n == 0)
                   {
@@ -312,8 +313,8 @@ public:
                     mac_tmp = out_buf[tm][tr][tc];
                   }
                   // mm_dsp_mm(mac_i[0], mac_i[1], mac_i[2], mac_i[3], &mac_tmp, clear, dsp_clk);
-                  mm_dsp_mm(w1in_i, i01in_i, w2in_i, i02in_i, &mac_tmp, clear, dsp_clk);
-//                  mm_dsp_mm(w1in_i, i11in_i, w2in_i, i12in_i, &mac_tmp, clear, dsp_clk);
+                  mm_dsp_mm(w1in_i, w2in_i, i01in_i, i02in_i, &mac_tmp, clear, dsp_clk);
+                  //                  mm_dsp_mm(w1in_i, i11in_i, w2in_i, i12in_i, &mac_tmp, clear, dsp_clk);
                   if (mac_tmp >= 16384)
                   {
                     accum_out = 16384;
@@ -374,18 +375,18 @@ public:
   };*/
 
   void output_res_1i1o(int16_t out_buf[Tm][Tr][Tc],
-                  //int16_t *out_data,
-                  ap_uint<64> *out_data,
-                  int out_offset,
-                  int n,
-                  int m,
-                  int r,
-                  int c,
-                  int N,
-                  int M,
-                  int R_OUT,
-                  int C_OUT,
-                  bool act)
+                       //int16_t *out_data,
+                       ap_uint<64> *out_data,
+                       int out_offset,
+                       int n,
+                       int m,
+                       int r,
+                       int c,
+                       int N,
+                       int M,
+                       int R_OUT,
+                       int C_OUT,
+                       bool act)
   {
 
 #pragma HLS inline off
@@ -398,25 +399,26 @@ public:
 
     idx_tm = m >> 2;
     // if (n >= N - Tn && m > 0)
-//    cout << "output buffer data: n=" << n << " m=" << m << endl;
+    //    cout << "output buffer data: n=" << n << " m=" << m << endl;
     if (n >= N - Tn)
     {
-//      cout << "output buffer data: " << n << " " << m << endl;
+      //      cout << "output buffer data: " << n << " " << m << endl;
       for (tr = 0; tr < Tr; tr++)
       {
         for (tc = 0; tc < Tc; tc++)
         {
 #pragma HLS PIPELINE
           //*(out_data + out_offset + tm * Tr * Tc + tr * Tc + tc) = out_buf[tm][tr][tc];
-        	for(idx_tm = 0; idx_tm < Tm; idx_tm += 4){
-//        		cout << "Squeezing output: m=" << m << " idx_tm=" << idx_tm << " " << (idx_tm/4);
-//        		cout << endl;
-        		for (d_idx = 0; d_idx < 4; d_idx++)
-        		{
+          for (idx_tm = 0; idx_tm < Tm; idx_tm += 4)
+          {
+            //        		cout << "Squeezing output: m=" << m << " idx_tm=" << idx_tm << " " << (idx_tm/4);
+            //        		cout << endl;
+            for (d_idx = 0; d_idx < 4; d_idx++)
+            {
 #pragma HLS UNROLL
-        			local_o_buf.range(16 * d_idx + 15, 16 * d_idx) = out_buf[idx_tm + d_idx][tr][tc];
-        		}
-        		*(out_data + out_offset + (m/Tm + idx_tm/4) * Tr * Tc + tr * Tc + tc) = local_o_buf.range(63, 0);
+              local_o_buf.range(16 * d_idx + 15, 16 * d_idx) = out_buf[idx_tm + d_idx][tr][tc];
+            }
+            *(out_data + out_offset + (m / Tm + idx_tm / 4) * Tr * Tc + tr * Tc + tc) = local_o_buf.range(63, 0);
           }
         }
       }
@@ -428,21 +430,24 @@ public:
   };
 
   void output_res_2i2o(int16_t out_buf[Tm][Tr][Tc],
-                    //int16_t *out_data,
-                    ap_uint<64> *out_data,
-                    int out_offset,
-                    int n,
-                    int m,
-                    int r,
-                    int c,
-                    int N,
-                    int M,
-                    int R_OUT,
-                    int C_OUT,
-                    bool act){;};
+                       //int16_t *out_data,
+                       ap_uint<64> *out_data,
+                       int out_offset,
+                       int n,
+                       int m,
+                       int r,
+                       int c,
+                       int N,
+                       int M,
+                       int R_OUT,
+                       int C_OUT,
+                       bool act)
+  {
+    ;
+  };
 
   void print_3dbuf_i(
-	  char *arrayname,
+      char *arrayname,
       int16_t array_name[][IBUF_t][IBUF_t],
       int dim_n,
       int dim_r,
@@ -451,7 +456,7 @@ public:
     // display in_buf
     cout << endl;
     cout << endl;
-    cout << "Printing "<<arrayname <<" buffer" << endl;
+    cout << "Printing " << arrayname << " buffer" << endl;
     for (int i = 0; i < dim_n; i++)
     {
       for (int j = 0; j < dim_r; j++)
@@ -467,7 +472,7 @@ public:
   };
 
   void print_3dbuf_o(
-	  char *arrayname,
+      char *arrayname,
       int16_t array_name[Tm][Tr][Tc],
       int dim_n,
       int dim_r,
@@ -476,7 +481,7 @@ public:
     // display in_buf
     cout << endl;
     cout << endl;
-    cout << "Printing "<<arrayname <<" buffer" << endl;
+    cout << "Printing " << arrayname << " buffer" << endl;
     for (int i = 0; i < dim_n; i++)
     {
       for (int j = 0; j < dim_r; j++)
@@ -492,32 +497,33 @@ public:
   };
 
   void print_wdata(
-  	  char *arrayname,
+      char *arrayname,
       int16_t array_name[Tn][Tm][K_max][K_max],
       int dim_n,
-	  int dim_m,
+      int dim_m,
       int dim_k)
+  {
+    // display in_buf
+    cout << endl;
+    cout << endl;
+    cout << "Printing " << arrayname << " buffer" << endl;
+    for (int i = 0; i < dim_n; i++)
     {
-      // display in_buf
-      cout << endl;
-      cout << endl;
-      cout << "Printing "<<arrayname <<" buffer" << endl;
-      for (int i = 0; i < dim_n; i++)
+      for (int j = 0; j < dim_m; j++)
       {
-        for (int j = 0; j < dim_m; j++)
+        for (int k1 = 0; k1 < dim_k; k1++)
         {
-          for (int k1 = 0; k1 < dim_k; k1++)
+          for (int k2 = 0; k2 < dim_k; k2++)
           {
-        	  for (int k2 = 0; k2 < dim_k; k2++){
-        		  cout << array_name[i][j][k1][k2] << "  ";
-        	  }
-        	  cout << endl;
+            cout << array_name[i][j][k1][k2] << "  ";
           }
           cout << endl;
         }
         cout << endl;
       }
-    };
+      cout << endl;
+    }
+  };
 
   void conv_core_1i1o(
       int N,     //input feature number
@@ -539,11 +545,11 @@ public:
 #if IN_PORT_WIDTH == 64
       ap_uint<64> *i_weight,
       ap_uint<64> *i_data,
-	  ap_uint<64> *out_data,
+      ap_uint<64> *out_data,
 #else
     int16_t *i_weight,
     int16_t *i_data,
-	int16_t *out_data,
+    int16_t *out_data,
 #endif
       bool clk2)
   {
@@ -573,17 +579,17 @@ public:
         {
           for (int n = 0; n < N; n += Tn)
           {
-//            cout << "load buffer set 0" << endl;
+            //            cout << "load buffer set 0" << endl;
             b_buf_load(b_buf_0, i_bias, bias_offset, m);
             w_buf_load(w_buf_0, i_weight, weight_offset, n, m, K, N, M);
-//            cout << "Loading location: " <<"m="<< m << " n=" << n << " r=" << r << " c=" << c << " N=" << N << " M=" << M << " " << endl;
+            //            cout << "Loading location: " <<"m="<< m << " n=" << n << " r=" << r << " c=" << c << " N=" << N << " M=" << M << " " << endl;
             in_buf_load(in_buf_0, i_data, in_offset, n, r, c, S, K, P, R_IN, C_IN, N);
-//            print_3dbuf_i("in_buf", in_buf_0, Tn, IBUF_t, IBUF_t);
-//            print_wdata("w_data", w_buf_0, Tn, Tm, K);
-//            print_3dbuf_o("o_buf_initial", out_buf_0, Tm, Tr, Tc);
-//            cout << "Process buffer set 0" << endl;
+            //            print_3dbuf_i("in_buf", in_buf_0, Tn, IBUF_t, IBUF_t);
+            //            print_wdata("w_data", w_buf_0, Tn, Tm, K);
+            //            print_3dbuf_o("o_buf_initial", out_buf_0, Tm, Tr, Tc);
+            //            cout << "Process buffer set 0" << endl;
             conv_engine(in_buf_0, w_buf_0, b_buf_0, out_buf_0, S, n, N, r, c, K, R_OUT, C_OUT, 0, 0, clk2);
-//            print_3dbuf_o("o_buf_executed", out_buf_0, Tm, Tr, Tc);
+            // print_3dbuf_o("o_buf_executed", out_buf_0, Tm, Tr, Tc);
           }
           output_res_1i1o(out_buf_0, out_data, out_offset, N, m, r, c, N, M, R_OUT, C_OUT, act);
         }
